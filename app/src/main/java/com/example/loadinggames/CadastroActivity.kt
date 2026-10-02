@@ -9,6 +9,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
+import com.example.loadinggames.api.CadastroRequest
+import com.example.loadinggames.api.CadastroResponse
+import com.example.loadinggames.api.RetrofitClient
+
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+
 class CadastroActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,19 +27,24 @@ class CadastroActivity : AppCompatActivity() {
         val edtNome = findViewById<EditText>(R.id.edtNome)
         val edtEmail = findViewById<EditText>(R.id.edtEmailCadastro)
         val edtSenha = findViewById<EditText>(R.id.edtSenhaCadastro)
-        val edtConfirmarSenha = findViewById<EditText>(R.id.edtConfirmarSenha)
+        val edtConfirmarSenha =
+            findViewById<EditText>(R.id.edtConfirmarSenha)
 
-        val btnCadastrar = findViewById<Button>(R.id.btnCadastrar)
-        val txtVoltarLogin = findViewById<TextView>(R.id.txtVoltarLogin)
+        val btnCadastrar =
+            findViewById<Button>(R.id.btnCadastrar)
+
+        val txtVoltarLogin =
+            findViewById<TextView>(R.id.txtVoltarLogin)
 
         btnCadastrar.setOnClickListener {
 
             val nome = edtNome.text.toString().trim()
             val email = edtEmail.text.toString().trim()
             val senha = edtSenha.text.toString()
-            val confirmarSenha = edtConfirmarSenha.text.toString()
+            val confirmarSenha =
+                edtConfirmarSenha.text.toString()
 
-            // VALIDAÇÃO DO NOME
+            // NOME
             if (nome.isEmpty()) {
                 edtNome.error = "Digite seu nome"
                 edtNome.requestFocus()
@@ -44,7 +57,7 @@ class CadastroActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // VALIDAÇÃO DO E-MAIL
+            // E-MAIL
             if (email.isEmpty()) {
                 edtEmail.error = "Digite seu e-mail"
                 edtEmail.requestFocus()
@@ -57,7 +70,7 @@ class CadastroActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // VALIDAÇÃO DA SENHA
+            // SENHA
             if (senha.isEmpty()) {
                 edtSenha.error = "Digite uma senha"
                 edtSenha.requestFocus()
@@ -65,12 +78,13 @@ class CadastroActivity : AppCompatActivity() {
             }
 
             if (senha.length < 6) {
-                edtSenha.error = "A senha deve ter pelo menos 6 caracteres"
+                edtSenha.error =
+                    "A senha deve ter pelo menos 6 caracteres"
                 edtSenha.requestFocus()
                 return@setOnClickListener
             }
 
-            // CONFIRMAÇÃO DA SENHA
+            // CONFIRMAR SENHA
             if (confirmarSenha.isEmpty()) {
                 edtConfirmarSenha.error = "Confirme sua senha"
                 edtConfirmarSenha.requestFocus()
@@ -78,28 +92,77 @@ class CadastroActivity : AppCompatActivity() {
             }
 
             if (senha != confirmarSenha) {
-                edtConfirmarSenha.error = "As senhas não são iguais"
+                edtConfirmarSenha.error =
+                    "As senhas não são iguais"
                 edtConfirmarSenha.requestFocus()
                 return@setOnClickListener
             }
 
-            // CADASTRO VÁLIDO
-            Toast.makeText(
-                this,
-                "Conta criada com sucesso!",
-                Toast.LENGTH_SHORT
-            ).show()
+            // ENVIA PARA A API
+            val cadastroRequest = CadastroRequest(
+                nome = nome,
+                email = email,
+                senha = senha
+            )
 
-            // VOLTAR PARA O LOGIN
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
-            finish()
+            RetrofitClient.api.cadastrar(cadastroRequest)
+                .enqueue(object : Callback<CadastroResponse> {
+
+                    override fun onResponse(
+                        call: Call<CadastroResponse>,
+                        response: Response<CadastroResponse>
+                    ) {
+
+                        if (response.isSuccessful) {
+
+                            Toast.makeText(
+                                this@CadastroActivity,
+                                response.body()?.mensagem
+                                    ?: "Conta criada com sucesso!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            // VOLTA PARA O LOGIN
+                            val intent = Intent(
+                                this@CadastroActivity,
+                                LoginActivity::class.java
+                            )
+
+                            startActivity(intent)
+                            finish()
+
+                        } else {
+
+                            Toast.makeText(
+                                this@CadastroActivity,
+                                "Não foi possível criar a conta. Verifique se o e-mail já está cadastrado.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+
+                    override fun onFailure(
+                        call: Call<CadastroResponse>,
+                        t: Throwable
+                    ) {
+
+                        Toast.makeText(
+                            this@CadastroActivity,
+                            "Erro ao conectar com o servidor: ${t.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                })
         }
 
         // VOLTAR PARA LOGIN
         txtVoltarLogin.setOnClickListener {
 
-            val intent = Intent(this, LoginActivity::class.java)
+            val intent = Intent(
+                this,
+                LoginActivity::class.java
+            )
+
             startActivity(intent)
             finish()
         }

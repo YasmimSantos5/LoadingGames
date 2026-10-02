@@ -1,5 +1,5 @@
-
 package com.example.loadinggames
+
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -8,6 +8,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
+import com.example.loadinggames.api.LoginRequest
+import com.example.loadinggames.api.LoginResponse
+import com.example.loadinggames.api.RetrofitClient
+
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import android.util.Log
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var edtEmail: EditText
@@ -79,36 +87,72 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        // =====================================
-        // VALIDAÇÃO PROVISÓRIA
-        // =====================================
+        // Cria os dados que serão enviados para a API
+        val loginRequest = LoginRequest(
+            email = email,
+            senha = senha
+        )
 
-        val emailTeste = "admin@loadinggames.com"
-        val senhaTeste = "123456"
+        // Chama a API
+        RetrofitClient.api.login(loginRequest).enqueue(
+            object : Callback<LoginResponse> {
 
-        if (email == emailTeste && senha == senhaTeste) {
+                override fun onResponse(
+                    call: Call<LoginResponse>,
+                    response: Response<LoginResponse>
+                ) {
 
-            Toast.makeText(
-                this,
-                "Login realizado com sucesso!",
-                Toast.LENGTH_SHORT
-            ).show()
+                    if (response.isSuccessful) {
 
-            // Abre a tela principal
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
+                        val loginResponse = response.body()
 
-            // Impede voltar para a tela de login
-            finish()
+                        Toast.makeText(
+                            this@LoginActivity,
+                            loginResponse?.mensagem
+                                ?: "Login realizado com sucesso!",
+                            Toast.LENGTH_SHORT
+                        ).show()
 
-        } else {
+                        // Abre a tela principal
+                        val intent = Intent(
+                            this@LoginActivity,
+                            MainActivity::class.java
+                        )
 
-            Toast.makeText(
-                this,
-                "E-mail ou senha incorretos",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
+                        startActivity(intent)
+
+                        // Impede voltar para a tela de login
+                        finish()
+
+                    } else {
+
+                        Toast.makeText(
+                            this@LoginActivity,
+                            "E-mail ou senha incorretos",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                override fun onFailure(
+                    call: Call<LoginResponse>,
+                    t: Throwable
+                ) {
+
+                    Log.e(
+                        "LOGIN_API",
+                        "ERRO AO CONECTAR COM A API",
+                        t
+                    )
+
+                    Toast.makeText(
+                        this@LoginActivity,
+                        "Erro ao conectar com o servidor: ${t.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+
+            }
+        )
     }
 }
-
